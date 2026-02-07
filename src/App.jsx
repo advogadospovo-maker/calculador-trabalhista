@@ -130,8 +130,7 @@ export default function App() {
     </button>
   </div>
 )}
-        )}
-      </div>
+        </div>
     </div>
   );
 }
@@ -151,3 +150,4 @@ const styles = {
   pdfButton: { width: '100%', padding: '12px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }
 
 };
+
