@@ -111,14 +111,25 @@ export default function App() {
 
         <button onClick={calcular} style={styles.button}>Calcular Estimativa</button>
 
-        {resultado && (
-          <div style={styles.resultContainer}>
-            <div style={styles.totalBox}>
-              <span style={{fontSize: '0.9rem', color: '#666'}}>Total Bruto</span>
-              <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#111'}}>R$ {resultado.total}</div>
-            </div>
-            <button onClick={gerarPDF} style={styles.pdfButton}>Exportar PDF para Negociação</button>
-          </div>
+        {/* O código abaixo só será executado SE 'resultado' não for null */}
+{resultado && (
+  <div style={styles.resultContainer}>
+    <div style={styles.totalBox}>
+      <span style={{fontSize: '0.9rem', color: '#666'}}>Total Bruto</span>
+      {/* O erro acontece se você tentar acessar resultado.total fora deste bloco */}
+      <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#111'}}>
+        R$ {resultado.total}
+      </div>
+    </div>
+    
+    {/* Se você adicionou linhas extras, verifique se elas usam resultado.aviso assim: */}
+    <div>Aviso Prévio: R$ {resultado.aviso}</div> 
+
+    <button onClick={gerarPDF} style={styles.pdfButton}>
+      Exportar PDF para Negociação
+    </button>
+  </div>
+)}
         )}
       </div>
     </div>
@@ -138,4 +149,5 @@ const styles = {
   resultContainer: { marginTop: '25px', borderTop: '1px solid #eee', paddingTop: '20px' },
   totalBox: { textAlign: 'center', marginBottom: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' },
   pdfButton: { width: '100%', padding: '12px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }
+
 };
