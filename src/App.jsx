@@ -10,25 +10,27 @@ export default function App() {
   const calcular = () => {
     const { salario, admissao, demissao, avisoPrevio } = dados;
     
-    if (!salario || !admissao || !demissao) return alert("Por favor, preencha todos os campos.");
+    if (!salario || !admissao || !demissao) {
+      return alert("Por favor, preencha todos os campos.");
+    }
     
     const inicio = new Date(admissao);
     const fim = new Date(demissao);
-    const valorSalario = parseFloat(salario);
+    const valorSalario = Number(salario.replace(",", "."));
 
     if (fim < inicio) {
       return alert("A data de demissão não pode ser anterior à data de admissão.");
     }
 
-    // Lógica de Meses
+    // Lógica de meses proporcionais
     let meses = (fim.getFullYear() - inicio.getFullYear()) * 12;
     meses += fim.getMonth() - inicio.getMonth();
     if (fim.getDate() >= 15) meses += 1;
-    if (meses <= 0) meses = 0;
+    if (meses < 1) meses = 1; // garante pelo menos 1 mês proporcional
 
     // Parcelas
     const decimoTerceiro = (valorSalario / 12) * meses;
-    const ferias = ((valorSalario / 12) * meses) * 1.3333;
+    const ferias = ((valorSalario / 12) * meses) * (4/3); // mais preciso que 1.3333
     const fgtsMensal = valorSalario * 0.08 * meses;
     const multaFgts = fgtsMensal * 0.40;
     const valorAviso = avisoPrevio ? valorSalario : 0;
@@ -46,6 +48,10 @@ export default function App() {
   };
 
   const gerarPDF = () => {
+    if (!resultado) {
+      return alert("Calcule a estimativa antes de gerar o PDF.");
+    }
+
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
@@ -90,47 +96,67 @@ export default function App() {
         
         <div style={styles.inputGroup}>
           <label style={styles.label}>Salário Bruto Mensal</label>
-          <input type="number" style={styles.input} value={dados.salario} onChange={e => setDados({...dados, salario: e.target.value})} placeholder="0.00" />
+          <input 
+            type="number" 
+            style={styles.input} 
+            value={dados.salario} 
+            onChange={e => setDados({...dados, salario: e.target.value})} 
+            placeholder="0.00" 
+          />
         </div>
 
         <div style={styles.rowInputs}>
           <div style={{flex: 1, marginRight: '10px'}}>
             <label style={styles.label}>Admissão</label>
-            <input type="date" style={styles.input} value={dados.admissao} onChange={e => setDados({...dados, admissao: e.target.value})} />
+            <input 
+              type="date" 
+              style={styles.input} 
+              value={dados.admissao} 
+              onChange={e => setDados({...dados, admissao: e.target.value})} 
+            />
           </div>
           <div style={{flex: 1}}>
             <label style={styles.label}>Demissão</label>
-            <input type="date" style={styles.input} value={dados.demissao} onChange={e => setDados({...dados, demissao: e.target.value})} />
+            <input 
+              type="date" 
+              style={styles.input} 
+              value={dados.demissao} 
+              onChange={e => setDados({...dados, demissao: e.target.value})} 
+            />
           </div>
         </div>
 
         <div style={styles.checkboxGroup}>
-          <input type="checkbox" id="aviso" checked={dados.avisoPrevio} onChange={e => setDados({...dados, avisoPrevio: e.target.checked})} />
-          <label htmlFor="aviso" style={{marginLeft: '8px', fontSize: '0.9rem'}}>Incluir Aviso Prévio Indenizado</label>
+          <input 
+            type="checkbox" 
+            id="aviso" 
+            checked={dados.avisoPrevio} 
+            onChange={e => setDados({...dados, avisoPrevio: e.target.checked})} 
+          />
+          <label htmlFor="aviso" style={{marginLeft: '8px', fontSize: '0.9rem'}}>
+            Incluir Aviso Prévio Indenizado
+          </label>
         </div>
 
         <button onClick={calcular} style={styles.button}>Calcular Estimativa</button>
 
-        {/* O código abaixo só será executado SE 'resultado' não for null */}
-{resultado && (
-  <div style={styles.resultContainer}>
-    <div style={styles.totalBox}>
-      <span style={{fontSize: '0.9rem', color: '#666'}}>Total Bruto</span>
-      {/* O erro acontece se você tentar acessar resultado.total fora deste bloco */}
-      <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#111'}}>
-        R$ {resultado.total}
-      </div>
-    </div>
-    
-    {/* Se você adicionou linhas extras, verifique se elas usam resultado.aviso assim: */}
-    <div>Aviso Prévio: R$ {resultado.aviso}</div> 
+        {resultado && (
+          <div style={styles.resultContainer}>
+            <div style={styles.totalBox}>
+              <span style={{fontSize: '0.9rem', color: '#666'}}>Total Bruto</span>
+              <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#111'}}>
+                R$ {resultado.total}
+              </div>
+            </div>
+            
+            <div>Aviso Prévio: R$ {resultado.aviso}</div> 
 
-    <button onClick={gerarPDF} style={styles.pdfButton}>
-      Exportar PDF para Negociação
-    </button>
-  </div>
-)}
-        </div>
+            <button onClick={gerarPDF} style={styles.pdfButton}>
+              Exportar PDF para Negociação
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -146,8 +172,4 @@ const styles = {
   checkboxGroup: { marginBottom: '25px', display: 'flex', alignItems: 'center' },
   button: { width: '100%', padding: '14px', backgroundColor: '#000', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' },
   resultContainer: { marginTop: '25px', borderTop: '1px solid #eee', paddingTop: '20px' },
-  totalBox: { textAlign: 'center', marginBottom: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' },
-  pdfButton: { width: '100%', padding: '12px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }
-
-};
-
+  totalBox: { textAlign: 'center', marginBottom: '15px', padding: '15px', backgroundColor: '#f8f
