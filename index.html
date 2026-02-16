@@ -15,20 +15,63 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; margin-bottom: 1rem; }
         .field { display: flex; flex-direction: column; }
         label { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; }
-        input, select { padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+        input, select { padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; }
         .dynamic-list { background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
-        .check-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
-        .check-item:last-child { border-bottom: none; }
-        .check-item input { margin-right: 12px; width: 20px; height: 20px; cursor: pointer; }
-        .actions { margin-top: 2rem; display: flex; flex-direction: column; gap: 10px; }
-        .btn { width: 100%; padding: 1rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .check-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
         .btn-calc { background: var(--primary); color: white; }
         .btn-pdf { background: var(--secondary); color: white; display: none; }
         .result-box { margin-top: 2rem; display: none; background: #fff; border: 2px solid var(--primary); padding: 1.5rem; border-radius: 12px; }
-        .result-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; }
-        .total-geral { font-size: 1.5rem; font-weight: 800; color: var(--primary); border-top: 2px solid #e2e8f0; margin-top: 10px; padding-top: 10px; }
+        .total-geral { font-size: 1.4rem; font-weight: 800; color: var(--primary); border-top: 2px solid #e2e8f0; margin-top: 10px; padding-top: 10px; display: flex; justify-content: space-between; }
+        .hist-row { display: grid; grid-template-columns: 1fr 1fr 1fr 40px; gap: 10px; margin-bottom: 8px; }
     </style>
 </head>
+<body>
+<div class="container">
+    <h2>🤝 Acordo Extrajudicial Inteligente</h2>
+    <div class="grid">
+        <div class="field"><label>Data Admissão</label><input type="date" id="dataAdmissao" onchange="gerarPeriodos()"></div>
+        <div class="field"><label>Data Demissão</label><input type="date" id="dataDemissao" onchange="gerarPeriodos()"></div>
+        <div class="field">
+            <label>Recebia Mínimo?</label>
+            <div style="display:flex; gap:10px; padding-top:10px;">
+                <input type="radio" name="tipoSal" value="sim" checked onchange="toggleHist()"> Sim
+                <input type="radio" name="tipoSal" value="nao" onchange="toggleHist()"> Não
+            </div>
+        </div>
+        <div class="field">
+            <label>Insalubridade (%)</label>
+            <select id="insalubridadePerc" onchange="gerarPeriodos()">
+                <option value="0">0%</option><option value="0.10">10%</option><option value="0.20" selected>20%</option><option value="0.40">40%</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="secaoManual" style="display:none;" class="dynamic-list">
+        <label>Histórico Salarial Manual</label>
+        <div id="listaSalarial">
+            <div class="hist-row">
+                <input type="date" class="h-ini"> <input type="date" class="h-fim"> <input type="number" class="h-val" placeholder="R$">
+                <button onclick="addLinha()" style="background:var(--primary); color:white; border:none; border-radius:4px;">+</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="areaPeriodos" style="display:none;">
+        <div class="section-title">⚖️ Verbas Pendentes</div>
+        <div id="listaFerias" class="dynamic-list"></div>
+        <div id="lista13" class="dynamic-list"></div>
+        <div id="listaIndenizacoes" class="dynamic-list"></div>
+    </div>
+
+    <button class="btn btn-calc" onclick="calcularTudo()">Calcular Acordo</button>
+    <button class="btn btn-pdf" id="btnPDF">📄 Exportar PDF</button>
+
+    <div class="result-box" id="resultado">
+        <div id="detalhe-calculo"></div>
+        <div class="total-geral"><span>TOTAL</span><span id="res-total">R$ 0,00</span></div>
+    </div>
+</div>
 <body>
 
 <div class="container">
@@ -36,7 +79,25 @@
     <div class="grid">
         <div class="field"><label>Admissão</label><input type="date" id="dataAdmissao" onchange="gerarPeriodos()"></div>
         <div class="field"><label>Demissão</label><input type="date" id="dataDemissao" onchange="gerarPeriodos()"></div>
-        <div class="field"><label>Salário Base (R$)</label><input type="number" id="salario" value="2500" onchange="gerarPeriodos()"></div>
+        <div class="field">
+    <label>Recebia Salário Mínimo?</label>
+    <div style="display: flex; gap: 15px; margin-top: 5px;">
+        <label style="flex-direction: row; gap: 5px;"><input type="radio" name="tipoSalario" value="minimo" checked onchange="toggleHistorico()"> Sim</label>
+        <label style="flex-direction: row; gap: 5px;"><input type="radio" name="tipoSalario" value="manual" onchange="toggleHistorico()"> Não</label>
+    </div>
+</div>
+
+<div id="secaoHistorico" style="display: none; margin-top: 1rem;" class="dynamic-list">
+    <label>Histórico Salarial (Informe os períodos e valores)</label>
+    <div id="listaSalarial">
+        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 0.2fr; margin-bottom: 5px;">
+            <input type="date" class="hist-inicio">
+            <input type="date" class="hist-fim">
+            <input type="number" class="hist-valor" placeholder="Valor R$">
+            <button onclick="addLinhaSalario()" style="background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+        </div>
+    </div>
+</div>
         <div class="field"><label>Insalubridade (%)</label>
             <select id="insalubridadePerc" onchange="gerarPeriodos()">
                 <option value="0">0%</option><option value="0.10">10%</option><option value="0.20" selected>20%</option><option value="0.40">40%</option>
@@ -62,8 +123,34 @@
 </div>
 
 <script>
-    const SALARIO_MINIMO_2026 = 1552.00;
-    let itensSelecionados = [];
+    const MINIMO_2026 = 1621.00; //
+    const TABELA_MINIMO = { 2024: 1412, 2025: 1518, 2026: 1552 };
+
+    function toggleHist() {
+        const isManual = document.querySelector('input[name="tipoSal"][value="nao"]').checked;
+        document.getElementById('secaoManual').style.display = isManual ? 'block' : 'none';
+        gerarPeriodos();
+    }
+
+    function addLinha() {
+        const div = document.createElement('div'); div.className = 'hist-row';
+        div.innerHTML = `<input type="date" class="h-ini"> <input type="date" class="h-fim"> <input type="number" class="h-val" placeholder="R$"><button onclick="this.parentElement.remove()" style="background:#ef4444; color:white; border:none; border-radius:4px;">x</button>`;
+        document.getElementById('listaSalarial').appendChild(div);
+    }
+
+    function obterSalarioNaData(data) {
+        const isMinimo = document.querySelector('input[name="tipoSal"][value="sim"]').checked;
+        if (isMinimo) return TABELA_MINIMO[data.getFullYear()] || MINIMO_2026;
+        
+        let valorEncontrado = 0;
+        document.querySelectorAll('.hist-row').forEach(row => {
+            const ini = new Date(row.querySelector('.h-ini').value);
+            const fim = new Date(row.querySelector('.h-fim').value);
+            const val = parseFloat(row.querySelector('.h-val').value);
+            if (data >= ini && data <= fim) valorEncontrado = val;
+        });
+        return valorEncontrado || 0;
+    }
 
     function gerarPeriodos() {
         const adm = new Date(document.getElementById('dataAdmissao').value + "T00:00:00");
@@ -71,63 +158,59 @@
         if (isNaN(adm) || isNaN(dem) || dem <= adm) return;
 
         const percIns = parseFloat(document.getElementById('insalubridadePerc').value);
-        const baseCalculo = parseFloat(document.getElementById('salario').value) + (SALARIO_MINIMO_2026 * percIns);
+        const insMensal = MINIMO_2026 * percIns; //
         
         document.getElementById('areaPeriodos').style.display = 'block';
-        const lv = document.getElementById('listaVerbas');
-        const li = document.getElementById('listaIndenizacoes');
-        lv.innerHTML = ""; li.innerHTML = "";
+        const lf = document.getElementById('listaFerias'); const l13 = document.getElementById('lista13'); const li = document.getElementById('listaIndenizacoes');
+        lf.innerHTML = ""; l13.innerHTML = ""; li.innerHTML = "";
 
-        // Férias
+        // Férias com Média Salarial do Período
         let cursor = new Date(adm);
         while (cursor < dem) {
-            let fim = new Date(cursor); fim.setFullYear(fim.getFullYear() + 1); fim.setDate(fim.getDate() - 1);
-            let val = (fim <= dem) ? baseCalculo * 1.3333 : (baseCalculo / 12 * Math.min(12, Math.floor((dem - cursor) / 2629746000) + (dem.getDate() >= 15 ? 1 : 0))) * 1.3333;
-            if(val > 0) criarItem(lv, `Férias ${cursor.getFullYear()}/${fim.getFullYear()}`, val);
+            let fimP = new Date(cursor); fimP.setFullYear(fimP.getFullYear() + 1); fimP.setDate(fimP.getDate() - 1);
+            let salRef = obterSalarioNaData(fimP <= dem ? fimP : dem);
+            let base = salRef + insMensal;
+            let val = (fimP <= dem) ? base * 1.3333 : (base/12 * (Math.floor((dem-cursor)/(1000*60*60*24*30.44)) + (dem.getDate()>=15?1:0))) * 1.3333;
+            if(val > 0) criarItemCheck(lf, `Férias ${cursor.getFullYear()}/${fimP.getFullYear()}`, val);
             cursor.setFullYear(cursor.getFullYear() + 1);
         }
 
-        // 13º
-        for(let a = adm.getFullYear(); a <= dem.getFullYear(); a++) {
-            let m = (a === dem.getFullYear()) ? dem.getMonth() + (dem.getDate() >= 15 ? 1 : 0) : (a === adm.getFullYear() ? 12 - adm.getMonth() : 12);
-            if(m > 0) criarItem(lv, `13º Salário ${a}`, (baseCalculo / 12) * m);
+        // 13º Salário
+        for(let a=adm.getFullYear(); a<=dem.getFullYear(); a++) {
+            let m = (a==dem.getFullYear()) ? dem.getMonth()+(dem.getDate()>=15?1:0) : (a==adm.getFullYear() ? 12-adm.getMonth() : 12);
+            let base = obterSalarioNaData(new Date(a, 11, 1)) + insMensal;
+            if(m > 0) criarItemCheck(l13, `13º Salário ${a} (${m}/12)`, (base/12)*m);
         }
 
-        // Aviso e FGTS
-        const anos = Math.floor((dem - adm) / 31557600000);
-        criarItem(li, `Aviso Prévio (${Math.min(30 + (anos * 3), 90)} dias)`, (baseCalculo / 30) * Math.min(30 + (anos * 3), 90));
-        const fgts = (baseCalculo * 0.08) * Math.round((dem - adm) / 2629746000);
-        criarItem(li, "FGTS Estimado", fgts);
-        criarItem(li, "Multa FGTS (40%)", fgts * 0.4);
+        // Saldo de Salário e Indenizações
+        const salFim = obterSalarioNaData(dem) + insMensal;
+        criarItemCheck(li, `Saldo de Salário (${dem.getDate()} dias)`, (salFim/30)*dem.getDate());
+        const anos = Math.floor((dem-adm)/31536000000);
+        criarItemCheck(li, `Aviso Prévio (${Math.min(30+(anos*3),90)} dias)`, (salFim/30)*Math.min(30+(anos*3),90));
+        const fgts = (salFim * 0.08) * Math.round((dem-adm)/2629746000);
+        criarItemCheck(li, "FGTS Estimado", fgts);
+        criarItemCheck(li, "Multa FGTS (40%)", fgts * 0.4);
     }
 
-    function criarItem(c, l, v) {
+    function criarItemCheck(c, l, v) {
         const d = document.createElement('div'); d.className = 'check-item';
         d.innerHTML = `<span><input type="checkbox" data-valor="${v}" data-label="${l}" checked> ${l}</span><b>R$ ${v.toFixed(2)}</b>`;
         c.appendChild(d);
     }
 
     function calcularTudo() {
-        let t = 0; let h = ""; itensSelecionados = [];
+        let t = 0; let h = ""; 
         document.querySelectorAll('input[type="checkbox"]:checked').forEach(i => {
-            const val = parseFloat(i.dataset.valor);
-            t += val; h += `<div class="result-item"><span>${i.dataset.label}</span><span>R$ ${val.toFixed(2)}</span></div>`;
-            itensSelecionados.push({l: i.dataset.label, v: val});
+            const v = parseFloat(i.dataset.valor);
+            t += v; h += `<div class="check-item"><span>${i.dataset.label}</span><span>R$ ${v.toFixed(2)}</span></div>`;
         });
         document.getElementById('detalhe-calculo').innerHTML = h;
         document.getElementById('res-total').innerText = t.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         document.getElementById('resultado').style.display = 'block';
         document.getElementById('btnPDF').style.display = 'block';
     }
-
-    document.getElementById('btnPDF').onclick = () => {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF(); let y = 40;
-        doc.setFont("helvetica", "bold"); doc.text("RESUMO DO ACORDO", 105, 20, {align:"center"});
-        doc.setFontSize(10); doc.setFont("helvetica", "normal");
-        itensSelecionados.forEach(i => { doc.text(i.l, 20, y); doc.text(`R$ ${i.v.toFixed(2)}`, 150, y); y += 10; });
-        doc.text("TOTAL:", 20, y+10); doc.text(document.getElementById('res-total').innerText, 150, y+10);
-        doc.save("acordo.pdf");
-    };
 </script>
+</body>
+</html>
 </body>
 </html>
