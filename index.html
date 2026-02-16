@@ -209,10 +209,67 @@
         document.getElementById('detalhe-calculo').innerHTML = html;
         document.getElementById('res-total').innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         document.getElementById('resultado').style.display = 'block';
-        document.getElementById('btnPDF').style.display = 'block';
-        window.scrollTo(0, document.body.scrollHeight);
-    }
+        document.getElementById('btnPDF').onclick = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 20;
+
+    // Cabeçalho
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("MEMORIAL DE CÁLCULO - ACORDO EXTRAJUDICIAL", 105, y, { align: "center" });
+    
+    y += 15;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Datas do Contrato
+    const adm = document.getElementById('dataAdmissao').value;
+    const dem = document.getElementById('dataDemissao').value;
+    doc.text(`Período: ${adm} até ${dem}`, 20, y);
+    
+    y += 10;
+    doc.line(20, y, 190, y); // Linha divisória
+    y += 10;
+
+    // Listar Verbas Selecionadas
+    const checks = document.querySelectorAll('input[type="checkbox"]:checked');
+    doc.setFont("helvetica", "bold");
+    doc.text("VERBAS PACTUADAS", 20, y);
+    doc.text("VALOR (R$)", 170, y);
+    y += 7;
+    
+    doc.setFont("helvetica", "normal");
+    checks.forEach(i => {
+        if (y > 270) { doc.addPage(); y = 20; } // Evita que o texto saia da página
+        const label = i.dataset.label;
+        const valor = parseFloat(i.dataset.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        
+        doc.text(label, 20, y);
+        doc.text(valor, 185, y, { align: "right" });
+        y += 7;
+    });
+
+    // Total Final
+    y += 10;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    const totalFinal = document.getElementById('res-total').innerText;
+    doc.text(`TOTAL DO ACORDO: ${totalFinal}`, 185, y, { align: "right" });
+
+    // Rodapé para assinaturas
+    y += 30;
+    if (y > 250) { doc.addPage(); y = 40; }
+    doc.line(30, y, 90, y); doc.line(120, y, 180, y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.text("Assinatura do Empregador", 60, y, { align: "center" });
+    doc.text("Assinatura do Trabalhador", 150, y, { align: "center" });
+
+    doc.save("acordo-trabalhista.pdf");
+};
 </script>
 </body>
 </html>
+
 
